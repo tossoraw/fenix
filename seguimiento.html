@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://script.google.com https://script.googleusercontent.com">
+<title>Transporte Fénix · Seguimiento</title>
+<style>
+  :root{ --fondo:#000; --texto:#fff; --texto2:#8E8E93; --tarjeta:#1C1C1E; --naranja:#FF9F0A; --verde:#30D158; }
+  body{ margin:0; background:var(--fondo); color:var(--texto); font-family:-apple-system,BlinkMacSystemFont,Roboto,"Segoe UI",sans-serif; }
+  .w{ max-width:520px; margin:0 auto; padding:22px 16px 40px; }
+  .lg{ color:var(--naranja); font-weight:900; letter-spacing:.08em; font-size:15px; margin-bottom:14px; }
+  h1{ font-size:22px; margin:0 0 4px; }
+  .sub{ color:var(--texto2); font-size:14px; margin:0 0 18px; }
+  .it{ display:flex; align-items:center; gap:12px; background:var(--tarjeta); border-radius:14px; padding:13px 14px; margin-bottom:8px; }
+  .tx{ flex:1; min-width:0; } .tx b{ display:block; font-size:16px; } .tx span{ color:var(--texto2); font-size:13px; }
+  .pt{ width:12px; height:12px; border-radius:50%; flex:none; } .pt.ok{ background:var(--verde); } .pt.camino{ background:var(--naranja); } .pt.pend{ background:#636366; }
+  em{ font-style:normal; font-size:12px; font-weight:700; border-radius:8px; padding:4px 8px; white-space:nowrap; }
+  em.ok{ background:rgba(48,209,88,.15); color:var(--verde); } em.camino{ background:rgba(255,159,10,.16); color:var(--naranja); } em.pend{ background:#2C2C2E; color:var(--texto2); }
+  .vacio{ color:var(--texto2); background:var(--tarjeta); border-radius:14px; padding:16px; }
+  .pie{ color:var(--texto2); font-size:13px; margin-top:22px; line-height:1.5; } .pie a{ color:var(--naranja); text-decoration:none; font-weight:700; }
+</style>
+</head>
+<body>
+<div class="w">
+  <div class="lg">TRANSPORTE FÉNIX</div>
+  <h1 id="tit">Tus encomiendas</h1>
+  <p class="sub" id="sub">Cargando…</p>
+  <div id="lista"></div>
+  <div class="pie">¿Dudas? Escribinos por <a href="https://wa.me/5493406402198">WhatsApp</a>.<br>Viajamos a Rosario los miércoles y viernes.</div>
+</div>
+<script>
+(function(){
+  var EXEC = 'https://script.google.com/macros/s/AKfycbylw40SsxREHPRJhKESbd6XbrekLXYwUUQJjiwgJ6LikaILNqFp6dzqvxx7TxMCrHY/exec';
+  var lista = document.getElementById('lista'), sub = document.getElementById('sub'), tit = document.getElementById('tit');
+  function msg(t){ lista.textContent = ''; var p = document.createElement('p'); p.className = 'vacio'; p.textContent = t; lista.appendChild(p); }
+  function el(tag, cls, txt){ var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+  var seg = new URLSearchParams(location.search).get('seg') || '';
+  if (!/^[A-Za-z0-9_-]{1,64}\.[A-Za-z0-9_-]{6,40}$/.test(seg)) { sub.textContent = ''; msg('Este link no es válido. Pedile uno nuevo a Transporte Fénix.'); return; }
+  fetch(EXEC + '?seg=' + encodeURIComponent(seg) + '&json=1').then(function(r){ return r.json(); }).then(function(d){
+    if (!d || !d.ok) { sub.textContent = ''; msg((d && d.error) || 'Este link no es válido. Pedile uno nuevo a Transporte Fénix.'); return; }
+    if (d.nombre) tit.textContent = 'Hola ' + d.nombre + ' 👋';
+    sub.textContent = 'Así van tus encomiendas · actualizado ' + (d.actualizado || '');
+    var its = d.items || []; lista.textContent = '';
+    if (!its.length) { msg('No hay encomiendas tuyas en viaje en este momento.'); return; }
+    var EST = { ok:'Entregado', camino:'Retirado · en camino', pend:'Por retirar' };
+    its.forEach(function(x){
+      var est = EST[x.est] ? x.est : 'pend';
+      var it = el('div', 'it'); it.appendChild(el('div', 'pt ' + est));
+      var tx = el('div', 'tx'); tx.appendChild(el('b', null, x.que || 'Encomienda'));
+      var b = Number(x.bultos) || 0;
+      tx.appendChild(el('span', null, (x.cuando || '') + (b ? ' · ' + b + (b === 1 ? ' bulto' : ' bultos') : '')));
+      it.appendChild(tx); it.appendChild(el('em', est, EST[est])); lista.appendChild(it);
+    });
+  }).catch(function(){ sub.textContent = ''; msg('No pudimos cargar tus encomiendas. Probá de nuevo en un rato.'); });
+})();
+</script>
+</body>
+</html>
